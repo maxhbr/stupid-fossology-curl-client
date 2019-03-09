@@ -10,7 +10,7 @@ REST_SERVER_API="${REST_SERVER_URL}/repo/api/v1"
 FOSS_USER=${FOSS_USER:-fossy}
 FOSS_PW=${FOSS_PW:-fossy}
 
-log() { >&2 echo "$@"; }
+log() { >&2 echo "$(tput setaf 3)$@$(tput sgr0)"; }
 have() { type "$1" &> /dev/null; }
 have jq && prettyfyCmd="jq" || prettyfyCmd="cat"
 
@@ -135,7 +135,7 @@ EOF
      $POSTCmd "$REST_SERVER_API/jobs" \
               -H "folderId: $folderId" \
               -H "uploadId: $uploadId" \
-              -H  "Content-Type: application/json" \
+              -H "Content-Type: application/json" \
               --data "$data"
     ) | handleResponse
 }
@@ -147,6 +147,14 @@ scheduleReport() {
      $GETCmd "$REST_SERVER_API/report" \
               -H "uploadId: $uploadId" \
               -H "reportFormat: $format"
+    ) | handleResponse
+}
+
+downloadReport() {
+    local reportId=$1
+    (set -x;
+     $GETCmd "$REST_SERVER_API/report/$reportId" \
+             -H "accept: text/plain"
     ) | handleResponse
 }
 
@@ -163,10 +171,11 @@ createFolder() {
 ################################################################################
 ################################################################################
 ################################################################################
+
 if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     # cli usage
     if [[ ! -n "$(type -t $1)" ]] || [[ "$(type -t $1)" != "function" ]]; then
-        echo "$1 not found, fall back to generic..."
+        log "$1 not found, fall back to generic..."
         GET $1
     else
         $@
@@ -176,7 +185,7 @@ else
     tmpdir=$(mktemp -d)
     cd "$tmpdir"
     finish() {
-        echo "cleanup"
+        log "cleanup"
         rm -rf $tmpdir
     }
     trap finish EXIT
