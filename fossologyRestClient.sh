@@ -13,6 +13,7 @@ FOSS_PW=${FOSS_PW:-fossy}
 log() { >&2 echo "$(tput setaf 3)$@$(tput sgr0)"; }
 have() { type "$1" &> /dev/null; }
 have jq && prettyfyCmd="jq" || prettyfyCmd="cat"
+prettyfyCmd="cat"
 
 curlCmd="curl -k -s -S --write-out HTTP_STATUS=%{http_code} -u $FOSS_USER:$FOSS_PW"
 GETCmd="$curlCmd -X GET"
@@ -176,18 +177,9 @@ if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
     # cli usage
     if [[ ! -n "$(type -t $1)" ]] || [[ "$(type -t $1)" != "function" ]]; then
         log "$1 not found, fall back to generic..."
-        GET $1
+        GET $1 | jq
     else
-        $@
+        $@ | jq
     fi
-else
-    # library usage
-    tmpdir=$(mktemp -d)
-    cd "$tmpdir"
-    finish() {
-        log "cleanup"
-        rm -rf $tmpdir
-    }
-    trap finish EXIT
 fi
 
